@@ -1192,7 +1192,16 @@ public:
   GroupCell *GetHCaret();
 
   //! Place the cursor into a new cell where the horizontal cursor is
-  void OpenHCaret(wxString txt = wxEmptyString, int type = GC_TYPE_CODE);
+  void OpenHCaret(wxString txt = wxEmptyString)
+    {
+      if(m_mainToolBar == NULL)
+        OpenHCaret(txt, GC_TYPE_CODE);
+      else
+        OpenHCaret(txt, m_mainToolBar->GetCellStyle());
+    }
+
+  //! Place the cursor into a new cell where the horizontal cursor is
+  void OpenHCaret(wxString txt, int type);
 
   void ShowHCaret();
 
