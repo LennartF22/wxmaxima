@@ -521,8 +521,6 @@ private:
 
   void OnMouseMiddleUp(wxMouseEvent &event);
 
-  void NumberSections();
-
   bool IsLesserGCType(int type, int comparedTo);
 
   //! Finds the start of the current chapter/section/...
@@ -589,6 +587,9 @@ private:
 
 
 public:
+  //! Renumber all sections
+  void NumberSections();
+
   //! A error notification message
   Notification *m_notificationMessage;
   //! Is this window active?

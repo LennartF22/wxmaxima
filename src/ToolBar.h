@@ -110,6 +110,7 @@ public:
     tb_animation_stop,
     tb_find,
     tb_hideCode,
+    tb_changeStyle,
     menu_restart_id
   };
 
@@ -187,6 +188,8 @@ public:
     {
       m_defaultCellStyle = style;
     }
+  //! The current style is the new style for new cells
+  void SetDefaultCellStyle();
   
 private:
   //! The default style for new cells.

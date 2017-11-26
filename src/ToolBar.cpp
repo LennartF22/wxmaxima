@@ -166,7 +166,7 @@ ToolBar::ToolBar(wxToolBar *tbar)
   textStyle.Add(_("Section"));
   textStyle.Add(_("Subsection"));
   textStyle.Add(_("Subsubsection"));
-  m_textStyle = new wxChoice(m_toolBar, -1, wxDefaultPosition, wxDefaultSize, textStyle);
+  m_textStyle = new wxChoice(m_toolBar, tb_changeStyle, wxDefaultPosition, wxDefaultSize, textStyle);
   m_toolBar->AddControl(m_textStyle);
 #ifndef __WXMAC__
   m_toolBar->AddSeparator();
@@ -214,29 +214,53 @@ ToolBar::ToolBar(wxToolBar *tbar)
   m_toolBar->Realize();
 }
 
+void ToolBar::SetDefaultCellStyle()
+{
+  switch(m_textStyle->GetSelection())
+  {
+  case 1:
+    m_defaultCellStyle = GC_TYPE_TEXT;
+    break;
+  case 2:
+    m_defaultCellStyle = GC_TYPE_TITLE;
+    break;
+  case 3:
+    m_defaultCellStyle = GC_TYPE_SECTION;
+    break;    
+  case 4:
+    m_defaultCellStyle = GC_TYPE_SUBSECTION;
+    break;
+  case 5:
+    m_defaultCellStyle = GC_TYPE_SUBSUBSECTION;
+    break;
+  default:
+  {}
+  }
+}
+
 int ToolBar::GetCellStyle()
 {
   switch(m_textStyle->GetSelection())
   {
-  case 0:
+  case 1:
     return GC_TYPE_TEXT;
     break;
-  case 1:
+  case 2:
     return GC_TYPE_TITLE;
     break;
-  case 2:
+  case 3:
     return GC_TYPE_SECTION;
     break;    
-  case 3:
+  case 4:
     return GC_TYPE_SUBSECTION;
     break;
-  case 4:
+  case 5:
     return GC_TYPE_SUBSUBSECTION;
     break;
-  case 5:
+  case 6:
     return GC_TYPE_IMAGE;
     break;
-  case 6:
+  case 7:
     return GC_TYPE_PAGEBREAK;
     break;
   default:
