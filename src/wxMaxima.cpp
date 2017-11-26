@@ -7503,6 +7503,7 @@ void wxMaxima::ChangeCellStyle(wxCommandEvent& WXUNUSED(event))
     {}
     }
     m_console->NumberSections();
+    m_console->SetFocus();
   }
   else
     m_console->m_mainToolBar->SetDefaultCellStyle();

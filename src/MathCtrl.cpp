@@ -6828,6 +6828,34 @@ void MathCtrl::SetActiveCell(EditorCell *cell, bool callRefresh)
     ScrollToCaret();
 }
 
+
+void MathCtrl::SetSelection(MathCell *start, MathCell *end)
+{
+  if((m_cellPointers.m_selectionStart != start) || (m_cellPointers.m_selectionEnd != end))
+    RequestRedraw();
+  m_cellPointers.m_selectionStart = start;
+  m_cellPointers.m_selectionEnd = end;
+
+  if (m_cellPointers.m_selectionStart == NULL)
+  {
+    m_hCaretPositionStart = NULL;
+    m_hCaretPositionEnd = NULL;
+  }
+
+  if(m_mainToolBar != NULL)
+  {
+    if (start == NULL)
+      m_mainToolBar->UnsetCellStyle();
+    else
+    {
+      if(start != end)
+        m_mainToolBar->UnsetCellStyle();
+      else
+        m_mainToolBar -> SetCellStyle(dynamic_cast<GroupCell *>(start)->GetGroupType());
+    }
+  }
+}
+
 bool MathCtrl::PointVisibleIs(wxPoint point)
 {
   int view_x, view_y;
