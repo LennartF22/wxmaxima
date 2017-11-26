@@ -218,6 +218,9 @@ void ToolBar::SetDefaultCellStyle()
 {
   switch(m_textStyle->GetSelection())
   {
+  case 0:
+    m_defaultCellStyle = GC_TYPE_CODE;
+    break;
   case 1:
     m_defaultCellStyle = GC_TYPE_TEXT;
     break;
