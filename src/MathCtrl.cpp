@@ -6773,12 +6773,20 @@ bool MathCtrl::TreeUndo(std::list<TreeUndoAction *> *sourcelist, std::list<TreeU
 
  */
 void MathCtrl::SetActiveCell(EditorCell *cell, bool callRefresh)
-{
+{ 
   if(GetActiveCell() == cell)
     return;
 
   if (GetActiveCell() != NULL)
     TreeUndo_CellLeft();
+
+  if(m_mainToolBar != NULL)
+  {
+    if(cell == NULL)
+      m_mainToolBar -> UnsetCellStyle();
+    else
+      m_mainToolBar -> SetCellStyle(dynamic_cast<GroupCell *>(cell->GetGroup())->GetGroupType());
+  }
   
   bool scrollneeded = ((GetActiveCell() != NULL) && (GetActiveCell() != cell));
 
@@ -7305,6 +7313,9 @@ void MathCtrl::OnActivate(wxActivateEvent &event)
 void MathCtrl::SetHCaret(GroupCell *where, bool callRefresh)
 {
   SetSelection(NULL);
+  if(m_mainToolBar != NULL)
+    m_mainToolBar->UnsetCellStyle();
+
   m_hCaretPositionStart = m_hCaretPositionEnd = NULL;
   SetActiveCell(NULL, false);
   if (where != NULL)

@@ -1113,6 +1113,9 @@ public:
       m_hCaretPositionStart = NULL;
       m_hCaretPositionEnd = NULL;
     }
+    if(m_mainToolBar != NULL)
+      m_mainToolBar->UnsetCellStyle();
+
   }
 
   ContentAssistantPopup *m_autocompletePopup;
