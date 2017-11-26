@@ -6783,7 +6783,9 @@ void MathCtrl::SetActiveCell(EditorCell *cell, bool callRefresh)
   if(m_mainToolBar != NULL)
   {
     if(cell == NULL)
+    {
       m_mainToolBar -> UnsetCellStyle();
+    }
     else
       m_mainToolBar -> SetCellStyle(dynamic_cast<GroupCell *>(cell->GetGroup())->GetGroupType());
   }
@@ -6844,12 +6846,17 @@ void MathCtrl::SetSelection(MathCell *start, MathCell *end)
 
   if(m_mainToolBar != NULL)
   {
-    if (start == NULL)
-      m_mainToolBar->UnsetCellStyle();
+    if (end == NULL)
+    {
+      if(GetActiveCell() == NULL)
+        m_mainToolBar->UnsetCellStyle();
+    }
     else
     {
-      if(start != end)
+      if((start != end) && (GetActiveCell() != NULL))
+      {
         m_mainToolBar->UnsetCellStyle();
+      }
       else
         m_mainToolBar -> SetCellStyle(dynamic_cast<GroupCell *>(start)->GetGroupType());
     }
@@ -7342,7 +7349,9 @@ void MathCtrl::SetHCaret(GroupCell *where, bool callRefresh)
 {
   SetSelection(NULL);
   if(m_mainToolBar != NULL)
+  {
     m_mainToolBar->UnsetCellStyle();
+  }
 
   m_hCaretPositionStart = m_hCaretPositionEnd = NULL;
   SetActiveCell(NULL, false);
