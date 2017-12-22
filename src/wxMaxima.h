@@ -41,6 +41,7 @@
 #include <wx/dnd.h>
 #include <wx/txtstrm.h>
 #include <wx/sckstrm.h>
+#include <wx/buffer.h>
 #ifdef __WXMSW__
 #include <windows.h>
 #endif
@@ -224,8 +225,10 @@ private:
     If text doesn't contain any error this function returns wxEmptyString
   */
   wxString GetUnmatchedParenthesisState(wxString text,int &index);
+  //! The buffer all data from maxima is temporarily stored in.
+  char *m_packetFromMaxima;
   //! The buffer all text from maxima is stored in before converting it to a wxString.
-  char *m_inputBuffer;
+  wxMemoryBuffer m_inputBuffer;
   /*! Convert problematic characters into something sane
    *
    * This makes sure that special character codes are not encountered unexpectedly
