@@ -701,15 +701,6 @@ void wxMaxima::SendMaxima(wxString s, bool addToHistory)
 ///  Socket stuff
 ///--------------------------------------------------------------------------------
 
-void wxMaxima::SanitizeSocketBuffer(char *buffer, int length)
-{
-  for (int i = 0; i < length; i++)
-  {
-    if (buffer[i] == 0)
-      buffer[i] = ' ';  // convert input null (0) to space (0x20)
-  }
-}
-
 void wxMaxima::ClientEvent(wxSocketEvent &event)
 {
   switch (event.GetSocketEvent())
@@ -731,81 +722,62 @@ void wxMaxima::ClientEvent(wxSocketEvent &event)
 
     // Read all data we can get from maxima
     int charsRead = 1;
+    // The memory we store new chars we receive from maxima in
+    wxString newChars;
     while((m_client != NULL) && (m_client->IsOk()) &&
           (m_client->IsData()) &&
           (!m_client->Error()) && (charsRead > 0))
       {
         // Read a data packet from maxima
-        m_client->Read(m_packetFromMaxima, SOCKET_SIZE);
-        charsRead = m_client->LastCount();
-        // For some reason our input buffer can actually contain NULL Chars...
-        SanitizeSocketBuffer(m_packetFromMaxima, charsRead);
-        // Append the data to our input buffer - that still might contain partial
-        // UTF8 characters
-        m_inputBuffer.AppendData(m_packetFromMaxima,charsRead);
-      }
+        m_client->Read(&(m_packetFromMaxima[m_uncompletedChars.GetDataLen()]),
+                       SOCKET_SIZE - m_uncompletedChars.GetDataLen());
+        for(unsigned int i = 0;i<m_uncompletedChars.GetDataLen();i++)
+          m_packetFromMaxima[i] = ((char *)m_uncompletedChars.GetData())[i];
+        charsRead = m_client->LastCount() + m_uncompletedChars.GetDataLen();
+        m_uncompletedChars.Clear();
+        
+        // Does the string we got from maxima end somewhere inside an unicode char?
+        if(m_packetFromMaxima[charsRead-1] >= 128)
+        {
+          // It did => Find the start of the unicode character m_inputBuffer ends with/in.
+          unsigned int bytesForLastChar = 0;
+          while(
+            (bytesForLastChar < 4) &&
+            (m_packetFromMaxima[charsRead-1] >= 128) &&
+            (m_packetFromMaxima[charsRead-1] <  192) &&
+            (charsRead > 0))
+          {
+            bytesForLastChar++;
+            charsRead--;
+          }
+          
+          // If the char m_inputBuffer ends with is unicode its first byte tells
+          // us how many bytes this char is long.
+          unsigned int lastCharSize = 0;
+          unsigned int firstbyte = m_packetFromMaxima[charsRead-1];
+          bytesForLastChar++;
+          if(firstbyte > 16*(8+4+2+1))
+            lastCharSize = 4;
+          else
+          {
+            if(firstbyte > 16*(8+4+2))
+              lastCharSize = 3;
+            else
+              lastCharSize = 2;
+          }
+          if(lastCharSize == bytesForLastChar)
+          {
+            charsRead += lastCharSize;
+            lastCharSize = 0;
+          }
+          m_uncompletedChars.AppendData(&(m_uncompletedChars[charsRead]),bytesForLastChar - 1);
+        }
 
-    // The memory we store new chars we receive from maxima in
-    wxString newChars;
-
-    // Does the string we got from maxima end somewhere inside an unicode char?
-    if(((char *) m_inputBuffer.GetData())[m_inputBuffer.GetDataLen()-1] >= 128)
-    {
-      // It did => Find the start of the unicode character m_inputBuffer ends with/in.
-      unsigned int bytesForLastChar = 0;
-      while(
-        (bytesForLastChar < 4) &&
-        (((char *) m_inputBuffer.GetData())[m_inputBuffer.GetDataLen()-1-bytesForLastChar] >= 128) &&
-        (((char *) m_inputBuffer.GetData())[m_inputBuffer.GetDataLen()-1-bytesForLastChar] <  192) &&
-        (bytesForLastChar < m_inputBuffer.GetDataLen()))
-        bytesForLastChar++;
-      
-      // Ok... ...if the char m_inputBuffer ends with truly is unicode its first byte tells
-      // us how many bytes this char is long.
-      unsigned int lastCharSize = 0;
-      unsigned int firstbyte = ((unsigned char *) m_inputBuffer.GetData())
-        [m_inputBuffer.GetDataLen()-1-bytesForLastChar];
-      bytesForLastChar++;
-      if(firstbyte > 16*(8+4+2+1))
-        lastCharSize = 4;
-      else
-      {
-        if(firstbyte > 16*(8+4+2))
-          lastCharSize = 3;
-        else
-          lastCharSize = 2;
-      }
-      std::cerr<< lastCharSize << bytesForLastChar<<"\n";
-      if(lastCharSize == bytesForLastChar)
-      {
         // Don't open a assert window every single time maxima mixes UTF8 and the current
         // codepage
         wxLogStderr logStderr;
-        
-        newChars += wxString::FromUTF8((char *)m_inputBuffer.GetData(), m_inputBuffer.GetDataLen());
-        m_inputBuffer.Clear();
+        newChars += wxString::FromUTF8(m_packetFromMaxima, charsRead);
       }
-      else
-      {
-        // Don't open a assert window every single time maxima mixes UTF8 and the current
-        // codepage
-        wxLogStderr logStderr;
-        
-        newChars += wxString::FromUTF8((char *)m_inputBuffer.GetData(), m_inputBuffer.GetDataLen() - lastCharSize);
-        wxMemoryBuffer partialChar;
-        char *buf = (char *)m_inputBuffer.GetData();
-        partialChar.AppendData(&buf[m_inputBuffer.GetDataLen() - lastCharSize], lastCharSize);
-        m_inputBuffer = partialChar;
-      }
-    }
-    else
-    {
-      // The packet  didn't end in the middle of an unicode char.
-      wxLogStderr logStderr;
-      
-      newChars += wxString::FromUTF8((char *)m_inputBuffer.GetData(), m_inputBuffer.GetDataLen());
-      m_inputBuffer.Clear();
-    }
     
     if (IsPaneDisplayed(menu_pane_xmlInspector))
       m_xmlInspector->Add_FromMaxima(newChars);

@@ -228,13 +228,7 @@ private:
   //! The buffer all data from maxima is temporarily stored in.
   char *m_packetFromMaxima;
   //! The buffer all text from maxima is stored in before converting it to a wxString.
-  wxMemoryBuffer m_inputBuffer;
-  /*! Convert problematic characters into something sane
-   *
-   * This makes sure that special character codes are not encountered unexpectedly
-   * (i.e. early).
-   */
-  void SanitizeSocketBuffer(char *buffer, int length);
+  wxMemoryBuffer m_uncompletedChars;
 
 protected:
   //! Is this window active?
