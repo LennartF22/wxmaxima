@@ -47,15 +47,18 @@ void ContentAssistantPopup::UpdateResults()
       );
     case 0:
       m_editor->ClearSelection();
-      this->GetParent()->GetParent()->Refresh();
+      m_parent->GetParent()->Refresh();
       if (!m_editor->IsActive())
         m_editor->ActivateCursor();
       Dismiss();
       *m_doneptr = NULL;
       break;
     default:
-      m_autocompletions->Set(m_completions);
-      m_autocompletions->SetSelection(0);
+      Clear();
+      for(wxArrayString::iterator it=m_completions.begin(); it != m_completions.end(); ++it)
+        Append(*it);
+//      Populate(m_completions);
+      SetSelection(0);
   }
 }
 
@@ -95,7 +98,7 @@ void ContentAssistantPopup::OnKeyDown(wxKeyEvent &event)
     case WXK_RIGHT:
     case WXK_NUMPAD_ENTER:
     {
-      int selection = m_autocompletions->GetSelection();
+      int selection = GetSelection();
       if (selection < 0)
         selection = 0;
 
@@ -104,7 +107,7 @@ void ContentAssistantPopup::OnKeyDown(wxKeyEvent &event)
                 m_editor->GetSelectionString(),
                 m_completions[selection]
         );
-      this->GetParent()->GetParent()->Refresh();
+      m_parent->GetParent()->Refresh();
       if (!m_editor->IsActive())
         m_editor->ActivateCursor();
       Dismiss();
@@ -113,7 +116,7 @@ void ContentAssistantPopup::OnKeyDown(wxKeyEvent &event)
       break;
     case WXK_LEFT:
     case WXK_ESCAPE:
-      this->GetParent()->GetParent()->Refresh();
+      m_parent->GetParent()->Refresh();
       if (!m_editor->IsActive())
         m_editor->ActivateCursor();
       Dismiss();
@@ -121,25 +124,25 @@ void ContentAssistantPopup::OnKeyDown(wxKeyEvent &event)
       break;
     case WXK_UP:
     {
-      int selection = m_autocompletions->GetSelection();
+      int selection = GetSelection();
       if (selection > 0)
-        m_autocompletions->SetSelection(selection - 1);
+        SetSelection(selection - 1);
       else
       {
         if (m_completions.GetCount() > 0)
-          m_autocompletions->SetSelection(0);
+          SetSelection(0);
       }
       break;
     }
     case WXK_DOWN:
     {
-      long selection = m_autocompletions->GetSelection();
+      long selection = GetSelection();
       if (selection < 0) selection = 0;
       selection++;
       if (selection >= (long) m_completions.GetCount())
         selection--;
       if (m_completions.GetCount() > 0)
-        m_autocompletions->SetSelection(selection);
+        SetSelection(selection);
       break;
     }
     case WXK_BACK:
@@ -155,7 +158,7 @@ void ContentAssistantPopup::OnKeyDown(wxKeyEvent &event)
         UpdateResults();
       }
       else
-        this->GetParent()->GetParent()->Refresh();
+        m_parent->GetParent()->Refresh();
       if (!m_editor->IsActive())
         m_editor->ActivateCursor();
 
@@ -166,7 +169,7 @@ void ContentAssistantPopup::OnKeyDown(wxKeyEvent &event)
     default:
       event.Skip();
   }
-  this->GetParent()->GetParent()->Refresh();
+  m_parent->GetParent()->Refresh();
 }
 
 void ContentAssistantPopup::OnClick(wxCommandEvent &event)
@@ -180,7 +183,7 @@ void ContentAssistantPopup::OnClick(wxCommandEvent &event)
             m_editor->GetSelectionString(),
             m_completions[selection]
     );
-    this->GetParent()->GetParent()->Refresh();
+    m_parent->GetParent()->Refresh();
     if (!m_editor->IsActive())
       m_editor->ActivateCursor();
     Dismiss();
@@ -209,37 +212,18 @@ ContentAssistantPopup::ContentAssistantPopup(
         AutoComplete *autocomplete,
         AutoComplete::autoCompletionType type,
         ContentAssistantPopup **doneptr
-) : wxPopupTransientWindow(parent, -1)
+) : wxVListBoxComboPopup()
 {
+  m_parent = parent;
   m_doneptr = doneptr;
   m_autocomplete = autocomplete;
   m_editor = editor;
   m_type = type;
   m_length = 0;
-  m_autocompletions = new wxListBox(this, -1);
   
-  m_autocompletions->Connect(wxEVT_LISTBOX,
-                             wxCommandEventHandler(ContentAssistantPopup::OnClick),
-                             NULL, this);
-  m_autocompletions->Connect(wxEVT_LISTBOX_DCLICK,
-                             wxCommandEventHandler(ContentAssistantPopup::OnClick),
-                             NULL, this);
-  m_autocompletions->Connect(wxEVT_CHAR,
-                wxKeyEventHandler(ContentAssistantPopup::OnChar),
-                NULL, this);
-  m_autocompletions->Connect(wxEVT_KEY_DOWN,
-                wxKeyEventHandler(ContentAssistantPopup::OnKeyDown),
-                NULL, this);
-  this->Connect(wxEVT_CHAR,
-                wxKeyEventHandler(ContentAssistantPopup::OnChar),
-                NULL, this);
-  this->Connect(wxEVT_KEY_DOWN,
-                wxKeyEventHandler(ContentAssistantPopup::OnKeyDown),
-                NULL, this);
-  wxBoxSizer *box = new wxBoxSizer(wxVERTICAL);
-  UpdateResults();
-  box->Add(m_autocompletions, 0, wxEXPAND | wxALL, 0);
-  SetSizerAndFit(box);
+  Connect(wxEVT_COMMAND_COMBOBOX_SELECTED,
+          wxCommandEventHandler(ContentAssistantPopup::OnClick),
+          NULL, this);
 }
 
 void ContentAssistantPopup::OnChar(wxKeyEvent &event)
@@ -270,7 +254,7 @@ void ContentAssistantPopup::OnChar(wxKeyEvent &event)
     // The current key is no more part of the current command
     //
     // => Add the current selection to the worksheet and handle this keypress normally.
-    int selection = m_autocompletions->GetSelection();
+    int selection = GetSelection();
         if (selection < 0)
           selection = 0;
         
@@ -278,7 +262,7 @@ void ContentAssistantPopup::OnChar(wxKeyEvent &event)
           m_editor->GetSelectionString(),
           m_completions[selection]
           );
-        this->GetParent()->GetParent()->Refresh();
+        m_parent->GetParent()->Refresh();
         if (!m_editor->IsActive())
           m_editor->ActivateCursor();
         Dismiss();
@@ -286,11 +270,11 @@ void ContentAssistantPopup::OnChar(wxKeyEvent &event)
         
         // Tell MathCtrl to handle this key event the normal way.
         wxKeyEvent *keyEvent = new wxKeyEvent(event);
-        m_autocompletions->GetEventHandler()->QueueEvent(keyEvent);
+        m_parent->GetEventHandler()->QueueEvent(keyEvent);
         return;
       }
 }
 
-BEGIN_EVENT_TABLE(ContentAssistantPopup, wxPopupTransientWindow)
+BEGIN_EVENT_TABLE(ContentAssistantPopup, wxVListBoxComboPopup)
 EVT_CLOSE(ContentAssistantPopup::OnClose)
 END_EVENT_TABLE()

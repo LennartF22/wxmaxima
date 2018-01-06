@@ -32,19 +32,19 @@
 #include "Autocomplete.h"
 #include "EditorCell.h"
 #include <wx/popupwin.h>
-
+#include <wx/odcombo.h>
 //! The maximum number of popup menu entries we show at the same time
 #define AC_MENU_LENGTH 25
 
-class ContentAssistantPopup : public wxPopupTransientWindow
+class ContentAssistantPopup : public wxVListBoxComboPopup
 {
 private:
+  wxWindow *m_parent;
   wxArrayString m_completions;
   AutoComplete *m_autocomplete;
   size_t m_length;
   EditorCell *m_editor;
   AutoComplete::autoCompletionType m_type;
-  wxListBox *m_autocompletions;
   ContentAssistantPopup **m_doneptr;
 protected:
   void OnDismiss();
