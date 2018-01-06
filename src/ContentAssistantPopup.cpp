@@ -181,11 +181,32 @@ void ContentAssistantPopup::OnKeyDown(wxKeyEvent &event)
 bool ContentAssistantPopup::Create(wxWindow* parent)
 {
   bool retval = wxListView::Create(parent,1,wxDefaultPosition,wxSize(100,100),
-                                   wxLC_ALIGN_LEFT | wxLC_LIST | wxLC_NO_HEADER
-                                   | wxLC_SINGLE_SEL |
+                                   wxLC_ALIGN_LEFT |
+                                   wxLC_LIST |
+                                   wxLC_NO_HEADER |
+                                   wxLC_SINGLE_SEL |
                                    wxLC_SORT_ASCENDING);
-  SetColumnWidth(0, wxLIST_AUTOSIZE);
   UpdateResults();
+
+  wxSize minSize;
+  wxSize itemSpacing = GetItemSpacing();
+  wxSize optimumSize = wxSize(-1,itemSpacing.y);
+  for (size_t i = 0; i < m_completions.GetCount(); i++)
+  {
+    optimumSize.y += itemSpacing.y;
+    wxRect itemRect;
+    if(GetItemRect(i, itemRect))
+    {
+      if(optimumSize.x < itemRect.GetWidth())
+        optimumSize.x = itemRect.GetWidth();
+      
+      optimumSize.y += itemRect.GetHeight();
+    }
+  }
+  minSize = optimumSize;
+  if (minSize.y > 400) minSize.y = 400;
+  SetMinSize(minSize);
+  //SetOptimumSize(optimumSize);
   return retval;
 }
 
