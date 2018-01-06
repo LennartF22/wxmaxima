@@ -180,13 +180,15 @@ void ContentAssistantPopup::OnKeyDown(wxKeyEvent &event)
 
 bool ContentAssistantPopup::Create(wxWindow* parent)
 {
-  bool retval = wxListView::Create(parent,1,wxDefaultPosition,wxSize(100,100),
+  bool retval = wxListView::Create(parent,1,wxDefaultPosition,wxDefaultSize,
                                    wxLC_ALIGN_LEFT |
-                                   wxLC_LIST |
+                                   wxLC_REPORT |
                                    wxLC_NO_HEADER |
                                    wxLC_SINGLE_SEL |
                                    wxLC_SORT_ASCENDING);
+  InsertColumn(0,wxEmptyString);
   UpdateResults();
+  SetColumnWidth(0, wxLIST_AUTOSIZE);
 
   wxSize minSize;
   wxSize itemSpacing = GetItemSpacing();
@@ -203,9 +205,11 @@ bool ContentAssistantPopup::Create(wxWindow* parent)
       optimumSize.y += itemRect.GetHeight();
     }
   }
+  std::cerr<<"width="<<optimumSize.x<<"\n";
   minSize = optimumSize;
   if (minSize.y > 400) minSize.y = 400;
   SetMinSize(minSize);
+  Layout();
   //SetOptimumSize(optimumSize);
   return retval;
 }
