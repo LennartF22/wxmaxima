@@ -57,8 +57,8 @@ void ContentAssistantPopup::UpdateResults()
     break;
   default:
     DeleteAllItems();
-    for(unsigned int i=0; i <= m_completions.GetCount(); i++)
-      InsertItem(i, m_completions[m_completions.GetCount()-i-1]);
+    for(unsigned int i=0; i < m_completions.GetCount(); i++)
+      InsertItem(i, m_completions[i]);
 
     SetItemState(0, wxLIST_STATE_SELECTED, wxLIST_STATE_SELECTED);
   }
