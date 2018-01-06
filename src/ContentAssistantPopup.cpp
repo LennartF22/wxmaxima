@@ -31,6 +31,8 @@
 #include "wxMaximaFrame.h"
 
 #include <wx/textfile.h>
+#include <wx/combo.h>
+#include <wx/listctrl.h>
 
 void ContentAssistantPopup::UpdateResults()
 {
@@ -40,25 +42,26 @@ void ContentAssistantPopup::UpdateResults()
 
   switch (m_completions.GetCount())
   {
-    case 1:
-      m_editor->ReplaceSelection(
-              m_editor->GetSelectionString(),
-              m_completions[0]
+  case 1:
+    m_editor->ReplaceSelection(
+      m_editor->GetSelectionString(),
+      m_completions[0]
       );
-    case 0:
-      m_editor->ClearSelection();
-      m_parent->GetParent()->Refresh();
-      if (!m_editor->IsActive())
-        m_editor->ActivateCursor();
-      Dismiss();
-      *m_doneptr = NULL;
-      break;
-    default:
-      Clear();
-      for(wxArrayString::iterator it=m_completions.begin(); it != m_completions.end(); ++it)
-        Append(*it);
-//      Populate(m_completions);
-      SetSelection(0);
+  case 0:
+    m_editor->ClearSelection();
+    m_parent->GetParent()->Refresh();
+    if (!m_editor->IsActive())
+      m_editor->ActivateCursor();
+    Destroy();
+    *m_doneptr = NULL;
+    break;
+  default:
+    DeleteAllItems();
+    int i = 0;
+    for(wxArrayString::iterator it=m_completions.begin(); it != m_completions.end(); ++it)
+      InsertItem(i, *it);
+
+    SetItemState(0, wxLIST_STATE_SELECTED, wxLIST_STATE_SELECTED);
   }
 }
 
@@ -66,127 +69,143 @@ void ContentAssistantPopup::OnKeyDown(wxKeyEvent &event)
 {
   switch (event.GetKeyCode())
   {
-    case WXK_TAB:
-      if (m_completions.GetCount() > 0)
+  case WXK_TAB:
+    if (m_completions.GetCount() > 0)
+    {
+      wxChar ch;
+      bool addChar = true;
+      wxString word = m_editor->GetSelectionString();
+      size_t index = word.Length();
+      do
       {
-        wxChar ch;
-        bool addChar = true;
-        wxString word = m_editor->GetSelectionString();
-        size_t index = word.Length();
-        do
+        if (m_completions[0].Length() <= index)
+          addChar = false;
+        else
         {
-          if (m_completions[0].Length() <= index)
-            addChar = false;
-          else
-          {
-            ch = m_completions[0][index];
-            for (size_t i = 0; i < m_completions.GetCount(); i++)
-              if ((m_completions[i].Length() < index + 1) || (m_completions[i][index] != ch))
-                addChar = false;
-          }
+          ch = m_completions[0][index];
+          for (size_t i = 0; i < m_completions.GetCount(); i++)
+            if ((m_completions[i].Length() < index + 1) || (m_completions[i][index] != ch))
+              addChar = false;
+        }
 
-          if (addChar)
-          {
-            index++;
-            word += ch;
-          }
-        } while (addChar);
-        m_editor->ReplaceSelection(m_editor->GetSelectionString(), word, true);
-      }
-      break;
-    case WXK_RETURN:
-    case WXK_RIGHT:
-    case WXK_NUMPAD_ENTER:
-    {
-      int selection = GetSelection();
-      if (selection < 0)
-        selection = 0;
+        if (addChar)
+        {
+          index++;
+          word += ch;
+        }
+      } while (addChar);
+      m_editor->ReplaceSelection(m_editor->GetSelectionString(), word, true);
+    }
+    break;
+  case WXK_RETURN:
+  case WXK_RIGHT:
+  case WXK_NUMPAD_ENTER:
+  {
+    int selection = GetNextItem(0,wxLIST_NEXT_ALL,
+                                wxLIST_STATE_SELECTED);
+    if (selection < 0)
+      selection = 0;
 
-      if (m_completions.GetCount() > 0)
-        m_editor->ReplaceSelection(
-                m_editor->GetSelectionString(),
-                m_completions[selection]
+    if (m_completions.GetCount() > 0)
+      m_editor->ReplaceSelection(
+        m_editor->GetSelectionString(),
+        m_completions[selection]
         );
-      m_parent->GetParent()->Refresh();
-      if (!m_editor->IsActive())
-        m_editor->ActivateCursor();
-      Dismiss();
-      *m_doneptr = NULL;
-    }
-      break;
-    case WXK_LEFT:
-    case WXK_ESCAPE:
-      m_parent->GetParent()->Refresh();
-      if (!m_editor->IsActive())
-        m_editor->ActivateCursor();
-      Dismiss();
-      *m_doneptr = NULL;
-      break;
-    case WXK_UP:
+    m_parent->GetParent()->Refresh();
+    if (!m_editor->IsActive())
+      m_editor->ActivateCursor();
+    Destroy();
+    *m_doneptr = NULL;
+  }
+  break;
+  case WXK_LEFT:
+  case WXK_ESCAPE:
+    m_parent->GetParent()->Refresh();
+    if (!m_editor->IsActive())
+      m_editor->ActivateCursor();
+    Destroy();
+    *m_doneptr = NULL;
+    break;
+  case WXK_UP:
+  {
+    int selection = GetNextItem(0,wxLIST_NEXT_ALL,
+                                wxLIST_STATE_SELECTED);
+    if (selection > 0)
+      SetItemState(selection - 1, wxLIST_STATE_SELECTED, wxLIST_STATE_SELECTED);
+    else
     {
-      int selection = GetSelection();
-      if (selection > 0)
-        SetSelection(selection - 1);
-      else
-      {
-        if (m_completions.GetCount() > 0)
-          SetSelection(0);
-      }
-      break;
-    }
-    case WXK_DOWN:
-    {
-      long selection = GetSelection();
-      if (selection < 0) selection = 0;
-      selection++;
-      if (selection >= (long) m_completions.GetCount())
-        selection--;
       if (m_completions.GetCount() > 0)
-        SetSelection(selection);
-      break;
+        SetItemState(0, wxLIST_STATE_SELECTED, wxLIST_STATE_SELECTED);
     }
-    case WXK_BACK:
+    break;
+  }
+  case WXK_DOWN:
+  {
+    long selection = GetNextItem(0,wxLIST_NEXT_ALL,
+                                 wxLIST_STATE_SELECTED);
+    if (selection < 0) selection = 0;
+    selection++;
+    if (selection >= (long) m_completions.GetCount())
+      selection--;
+    if (m_completions.GetCount() > 0)
+      SetItemState(selection, wxLIST_STATE_SELECTED, wxLIST_STATE_SELECTED);
+    break;
+  }
+  case WXK_BACK:
+  {
+    wxString oldString = m_editor->GetSelectionString();
+    if (oldString != wxEmptyString)
     {
-      wxString oldString = m_editor->GetSelectionString();
-      if (oldString != wxEmptyString)
-      {
-        m_editor->ReplaceSelection(
-                oldString,
-                oldString.Left(oldString.Length() - 1),
-                true
+      m_editor->ReplaceSelection(
+        oldString,
+        oldString.Left(oldString.Length() - 1),
+        true
         );
-        UpdateResults();
-      }
-      else
-        m_parent->GetParent()->Refresh();
-      if (!m_editor->IsActive())
-        m_editor->ActivateCursor();
-
-      Dismiss();
-      *m_doneptr = NULL;
-      break;
+      UpdateResults();
     }
-    default:
-      event.Skip();
+    else
+      m_parent->GetParent()->Refresh();
+    if (!m_editor->IsActive())
+      m_editor->ActivateCursor();
+
+    Destroy();
+    *m_doneptr = NULL;
+    break;
+  }
+  default:
+    event.Skip();
   }
   m_parent->GetParent()->Refresh();
 }
 
-void ContentAssistantPopup::OnClick(wxCommandEvent &event)
+bool ContentAssistantPopup::Create(wxWindow* parent)
 {
-  if (m_completions.GetCount() <= 0)
+  bool retval = wxListView::Create(parent,1,wxDefaultPosition,wxSize(100,100),
+                                   wxLC_ALIGN_LEFT | wxLC_LIST | wxLC_NO_HEADER
+                                   | wxLC_SINGLE_SEL |
+                                   wxLC_SORT_ASCENDING);
+  SetColumnWidth(0, wxLIST_AUTOSIZE);
+  UpdateResults();
+  return retval;
+}
+
+void ContentAssistantPopup::OnClick(wxMouseEvent &event)
+{
+  if (GetItemCount() <= 0)
     return;
+
+  m_value = wxListView::GetFirstSelected();
+
   {
-    int selection = event.GetSelection();
-    if (selection < 0) selection = 0;
+    if (m_value < 0) m_value = 0;
     m_editor->ReplaceSelection(
-            m_editor->GetSelectionString(),
-            m_completions[selection]
-    );
+      m_editor->GetSelectionString(),
+      m_completions[m_value]
+      );
     m_parent->GetParent()->Refresh();
     if (!m_editor->IsActive())
       m_editor->ActivateCursor();
-    Dismiss();
+    Destroy();
     *m_doneptr = NULL;
   }
 }
@@ -207,12 +226,9 @@ ContentAssistantPopup::~ContentAssistantPopup()
 }
 
 ContentAssistantPopup::ContentAssistantPopup(
-        wxWindow *parent,
-        EditorCell *editor,
-        AutoComplete *autocomplete,
-        AutoComplete::autoCompletionType type,
-        ContentAssistantPopup **doneptr
-) : wxVListBoxComboPopup()
+  wxWindow *parent, EditorCell *editor, AutoComplete *autocomplete,
+  AutoComplete::autoCompletionType type,
+  ContentAssistantPopup **doneptr): wxListView(), wxComboPopup()
 {
   m_parent = parent;
   m_doneptr = doneptr;
@@ -221,9 +237,9 @@ ContentAssistantPopup::ContentAssistantPopup(
   m_type = type;
   m_length = 0;
   
-  Connect(wxEVT_COMMAND_COMBOBOX_SELECTED,
-          wxCommandEventHandler(ContentAssistantPopup::OnClick),
-          NULL, this);
+//  Connect(wxEVT_COMMAND_COMBOBOX_SELECTED,
+//          wxCommandEventHandler(ContentAssistantPopup::OnClick),
+//          NULL, this);
 }
 
 void ContentAssistantPopup::OnChar(wxKeyEvent &event)
@@ -251,30 +267,36 @@ void ContentAssistantPopup::OnChar(wxKeyEvent &event)
   }
   else if (wxIsprint(key))
   {
+    int selection = GetNextItem(0,wxLIST_NEXT_ALL,
+                                wxLIST_STATE_SELECTED);
+
     // The current key is no more part of the current command
     //
     // => Add the current selection to the worksheet and handle this keypress normally.
-    int selection = GetSelection();
-        if (selection < 0)
-          selection = 0;
+    if (selection < 0)
+      selection = 0;
         
-        m_editor->ReplaceSelection(
-          m_editor->GetSelectionString(),
-          m_completions[selection]
-          );
-        m_parent->GetParent()->Refresh();
-        if (!m_editor->IsActive())
-          m_editor->ActivateCursor();
-        Dismiss();
-        *m_doneptr = NULL;
+    m_editor->ReplaceSelection(
+      m_editor->GetSelectionString(),
+      m_completions[selection]
+      );
+    m_parent->GetParent()->Refresh();
+    if (!m_editor->IsActive())
+      m_editor->ActivateCursor();
+    Destroy();
+    *m_doneptr = NULL;
         
-        // Tell MathCtrl to handle this key event the normal way.
-        wxKeyEvent *keyEvent = new wxKeyEvent(event);
-        m_parent->GetEventHandler()->QueueEvent(keyEvent);
-        return;
-      }
+    // Tell MathCtrl to handle this key event the normal way.
+    wxKeyEvent *keyEvent = new wxKeyEvent(event);
+    m_parent->GetEventHandler()->QueueEvent(keyEvent);
+    return;
+  }
 }
 
-BEGIN_EVENT_TABLE(ContentAssistantPopup, wxVListBoxComboPopup)
+wxBEGIN_EVENT_TABLE(ContentAssistantPopup, wxListView)
+EVT_MOTION(ContentAssistantPopup::OnMouseMove)
+EVT_LEFT_UP(ContentAssistantPopup::OnClick)
 EVT_CLOSE(ContentAssistantPopup::OnClose)
-END_EVENT_TABLE()
+wxEND_EVENT_TABLE()
+
+

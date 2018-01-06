@@ -31,13 +31,42 @@
 
 #include "Autocomplete.h"
 #include "EditorCell.h"
-#include <wx/popupwin.h>
-#include <wx/odcombo.h>
+#include <wx/combo.h>
+#include <wx/listctrl.h>
 //! The maximum number of popup menu entries we show at the same time
 #define AC_MENU_LENGTH 25
 
-class ContentAssistantPopup : public wxVListBoxComboPopup
+class ContentAssistantPopup : public wxListView, public wxComboPopup
 {
+  // Initialize member variables
+  virtual void Init()
+    {
+      m_value = -1;
+    }
+  
+  // Return pointer to the created control
+  virtual wxWindow *GetControl() { return this; }
+  // Translate string into a list selection
+  virtual void SetStringValue(const wxString& s)
+    {
+      int n = wxListView::FindItem(-1,s);
+      if ( n >= 0 && n < wxListView::GetItemCount() )
+        wxListView::Select(n);
+    }
+  // Get list selection as a string
+  virtual wxString GetStringValue() const
+    {
+      if ( m_value >= 0 )
+        return wxListView::GetItemText(m_value);
+      return wxEmptyString;
+    }
+  // Do mouse hot-tracking (which is typical in list popups)
+  void OnMouseMove(wxMouseEvent& event)
+    {
+      // TODO: Move selection to cursor
+    }
+protected:
+  int m_value; // current item index
 private:
   wxWindow *m_parent;
   wxArrayString m_completions;
@@ -51,6 +80,8 @@ protected:
   void OnClose(wxCloseEvent &event);
 
 public:
+    // Create popup control
+  virtual bool Create(wxWindow* parent);
   ~ContentAssistantPopup();
   //! Gets the info which keycode the current keypress results in
   void OnChar(wxKeyEvent &event);
@@ -64,15 +95,15 @@ public:
     \param autocomplete The autocompletion data
     \param type The type of completion needed
     \param doneptr A pointer that will be set to NULL when the pop-up is destroyed.
-   */
+  */
   ContentAssistantPopup(wxWindow *parent, EditorCell *editor, AutoComplete *autocomplete,
                         AutoComplete::autoCompletionType type, ContentAssistantPopup **doneptr);
 
   void UpdateResults();
 
-  void OnClick(wxCommandEvent &event);
+  void OnClick(wxMouseEvent &event);
 
-DECLARE_EVENT_TABLE()
+  DECLARE_EVENT_TABLE()
 };
 
 #endif // CONTENTASSISTANTPOPUP_H
