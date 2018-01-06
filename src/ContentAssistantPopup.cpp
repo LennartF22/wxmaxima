@@ -52,14 +52,13 @@ void ContentAssistantPopup::UpdateResults()
     m_parent->GetParent()->Refresh();
     if (!m_editor->IsActive())
       m_editor->ActivateCursor();
-    Destroy();
     *m_doneptr = NULL;
+    Destroy();
     break;
   default:
     DeleteAllItems();
-    int i = 0;
-    for(wxArrayString::iterator it=m_completions.begin(); it != m_completions.end(); ++it)
-      InsertItem(i, *it);
+    for(unsigned int i=0; i <= m_completions.GetCount(); i++)
+      InsertItem(i, m_completions[m_completions.GetCount()-i-1]);
 
     SetItemState(0, wxLIST_STATE_SELECTED, wxLIST_STATE_SELECTED);
   }
@@ -114,8 +113,8 @@ void ContentAssistantPopup::OnKeyDown(wxKeyEvent &event)
     m_parent->GetParent()->Refresh();
     if (!m_editor->IsActive())
       m_editor->ActivateCursor();
-    Destroy();
     *m_doneptr = NULL;
+    Destroy();
   }
   break;
   case WXK_LEFT:
@@ -123,8 +122,8 @@ void ContentAssistantPopup::OnKeyDown(wxKeyEvent &event)
     m_parent->GetParent()->Refresh();
     if (!m_editor->IsActive())
       m_editor->ActivateCursor();
-    Destroy();
     *m_doneptr = NULL;
+    Destroy();
     break;
   case WXK_UP:
   {
@@ -168,8 +167,8 @@ void ContentAssistantPopup::OnKeyDown(wxKeyEvent &event)
     if (!m_editor->IsActive())
       m_editor->ActivateCursor();
 
-    Destroy();
     *m_doneptr = NULL;
+    Destroy();
     break;
   }
   default:
@@ -184,8 +183,7 @@ bool ContentAssistantPopup::Create(wxWindow* parent)
                                    wxLC_ALIGN_LEFT |
                                    wxLC_REPORT |
                                    wxLC_NO_HEADER |
-                                   wxLC_SINGLE_SEL |
-                                   wxLC_SORT_ASCENDING);
+                                   wxLC_SINGLE_SEL);
   InsertColumn(0,wxEmptyString);
   UpdateResults();
   SetColumnWidth(0, wxLIST_AUTOSIZE);
@@ -230,8 +228,8 @@ void ContentAssistantPopup::OnClick(wxMouseEvent &event)
     m_parent->GetParent()->Refresh();
     if (!m_editor->IsActive())
       m_editor->ActivateCursor();
-    Destroy();
     *m_doneptr = NULL;
+    Destroy();
   }
 }
 
@@ -308,8 +306,8 @@ void ContentAssistantPopup::OnChar(wxKeyEvent &event)
     m_parent->GetParent()->Refresh();
     if (!m_editor->IsActive())
       m_editor->ActivateCursor();
-    Destroy();
     *m_doneptr = NULL;
+    Destroy();
         
     // Tell MathCtrl to handle this key event the normal way.
     wxKeyEvent *keyEvent = new wxKeyEvent(event);
