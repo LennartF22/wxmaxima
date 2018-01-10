@@ -359,8 +359,9 @@ void wxMaxima::FirstOutput(wxString s)
  * It will call
  * DoConsoleAppend if s is in xml and DoRawCosoleAppend if s is not in xml.
  */
-void wxMaxima::ConsoleAppend(wxString s, int type, wxString userLabel)
+TextCell *wxMaxima::ConsoleAppend(wxString s, int type, wxString userLabel)
 {
+  TextCell *lastLine = NULL;
   // If we want to append an error message to the worksheet and there is no cell
   // that can contain it we need to create such a cell.
   if (m_console->GetTree() == NULL)
@@ -376,7 +377,7 @@ void wxMaxima::ConsoleAppend(wxString s, int type, wxString userLabel)
   t.Trim(false);
   if (t.Length() == 0)
   {
-    return;
+    return NULL;
   }
 
   if (m_maxOutputCellsPerCommand > 0)
@@ -388,14 +389,14 @@ void wxMaxima::ConsoleAppend(wxString s, int type, wxString userLabel)
       DoRawConsoleAppend(
               _("... [suppressed additional lines since the output is longer than allowed in the configuration] "),
               MC_TYPE_ERROR);
-      return;
+      return NULL;
     };
 
 
     // If we already have output more lines than we are allowed to and we already
     // have informed the user about this we return immediately
     if (m_outputCellsFromCurrentCommand > m_maxOutputCellsPerCommand)
-      return;
+      return NULL;
   }
 
   if ((type != MC_TYPE_ERROR) && (type != MC_TYPE_WARNING))
@@ -416,7 +417,7 @@ void wxMaxima::ConsoleAppend(wxString s, int type, wxString userLabel)
         t.Trim();
         t.Trim(false);
         if (t.Length())
-          DoRawConsoleAppend(s, MC_TYPE_DEFAULT);
+          lastLine = DoRawConsoleAppend(s, MC_TYPE_DEFAULT);
         s = wxEmptyString;
       }
       else
@@ -464,7 +465,7 @@ void wxMaxima::ConsoleAppend(wxString s, int type, wxString userLabel)
 
   else if (type == MC_TYPE_ERROR)
   {
-    DoRawConsoleAppend(s, MC_TYPE_ERROR);
+    lastLine = DoRawConsoleAppend(s, MC_TYPE_ERROR);
     GroupCell *tmp = m_console->GetWorkingGroup(true);
     
     if (tmp == NULL)
@@ -481,12 +482,12 @@ void wxMaxima::ConsoleAppend(wxString s, int type, wxString userLabel)
   }
   else if (type == MC_TYPE_WARNING)
   {
-    DoRawConsoleAppend(s, MC_TYPE_WARNING);
+    lastLine = DoRawConsoleAppend(s, MC_TYPE_WARNING);
   }
   else
     DoConsoleAppend(wxT("<span>") + s + wxT("</span>"), type, false);
 
-//  m_console->Recalculate();
+  return lastLine;
 }
 
 void wxMaxima::DoConsoleAppend(wxString s, int type, bool newLine,
@@ -514,8 +515,9 @@ void wxMaxima::DoConsoleAppend(wxString s, int type, bool newLine,
   m_console->InsertLine(cell, newLine || cell->BreakLineHere());
 }
 
-void wxMaxima::DoRawConsoleAppend(wxString s, int type)
+TextCell *wxMaxima::DoRawConsoleAppend(wxString s, int type)
 {
+  TextCell *cell = NULL;
   // If we want to append an error message to the worksheet and there is no cell
   // that can contain it we need to create such a cell.
   if (m_console->GetTree() == NULL)
@@ -523,13 +525,13 @@ void wxMaxima::DoRawConsoleAppend(wxString s, int type)
             new GroupCell(&(m_console->m_configuration), GC_TYPE_CODE, &m_console->m_cellPointers, wxEmptyString));
 
   if (s.IsEmpty())
-    return;
+    return NULL;
 
   bool scrollToCaret = (!m_console->FollowEvaluation() && m_console->CaretVisibleIs());
 
   if (type == MC_TYPE_MAIN_PROMPT)
   {
-    TextCell *cell = new TextCell(m_console->GetTree(), &(m_console->m_configuration), &m_console->m_cellPointers, s);
+    cell = new TextCell(m_console->GetTree(), &(m_console->m_configuration), &m_console->m_cellPointers, s);
     cell->SetType(type);
     m_console->InsertLine(cell, true);
   }
@@ -558,13 +560,14 @@ void wxMaxima::DoRawConsoleAppend(wxString s, int type)
         cell->ForceBreakLine(true);
         lst = cell;
       }
-
+      
       count++;
     }
     m_console->InsertLine(tmp, true);
   }
 
   if (scrollToCaret) m_console->ScrollToCaret();
+  return cell;
 }
 
 /*! Remove empty statements
@@ -812,7 +815,9 @@ void wxMaxima::ClientEvent(wxSocketEvent &event)
         // Don't open an assert window every single time maxima mixes UTF8 and the current
         // codepage. 
         wxLogStderr logStderr;
-        newChars += wxString::FromUTF8((char *)m_packetFromMaxima, charsRead);
+        wxString packet = wxString::FromUTF8((char *)m_packetFromMaxima, charsRead);
+        std::cerr<<"packet="<<packet<<"\n";
+        newChars += packet;
 
         // Maxima sometimes seems to end a packet in the middle of a text line.
         // Let's output the lines that are affected.
@@ -1320,6 +1325,9 @@ void wxMaxima::ReadMiscText(wxString &data)
   miscText.Replace("\r\n","\n");
   miscText.Replace("\r","\n");
 
+  if(miscText.StartsWith("\n"))
+    m_console->m_cellPointers.m_currentTextCell = NULL;
+
   // A version of the text where each line begins with non-whitespace and whitespace
   // characters are merged.
   wxString mergedWhitespace = wxT("\n");
@@ -1394,6 +1402,9 @@ void wxMaxima::ReadMiscText(wxString &data)
       }
     }
   }
+  if(miscText.EndsWith("\n"))
+    m_console->m_cellPointers.m_currentTextCell = NULL;
+
 }
 
 int wxMaxima::FindTagEnd(wxString &data, const wxString &tag)
