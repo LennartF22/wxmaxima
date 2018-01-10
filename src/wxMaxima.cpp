@@ -1390,21 +1390,22 @@ void wxMaxima::ReadMiscText(wxString &data)
     {
       if(error)
       {
-        ConsoleAppend(textline, MC_TYPE_ERROR);
+        m_console->m_cellPointers.m_currentTextCell = ConsoleAppend(textline, MC_TYPE_ERROR);
         AbortOnError();
       }
       else
       {
         if(warning)
-          ConsoleAppend(textline, MC_TYPE_WARNING);
+          m_console->m_cellPointers.m_currentTextCell = ConsoleAppend(textline, MC_TYPE_WARNING);
         else
-          ConsoleAppend(textline, MC_TYPE_DEFAULT);
+          m_console->m_cellPointers.m_currentTextCell = ConsoleAppend(textline, MC_TYPE_DEFAULT);
       }
     }
   }
   if(miscText.EndsWith("\n"))
     m_console->m_cellPointers.m_currentTextCell = NULL;
-
+  if(data != wxEmptyString) 
+    m_console->m_cellPointers.m_currentTextCell = NULL;
 }
 
 int wxMaxima::FindTagEnd(wxString &data, const wxString &tag)
