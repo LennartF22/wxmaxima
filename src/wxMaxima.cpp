@@ -517,6 +517,7 @@ void wxMaxima::DoConsoleAppend(wxString s, int type, bool newLine,
 
 TextCell *wxMaxima::DoRawConsoleAppend(wxString s, int type)
 {
+  
   TextCell *cell = NULL;
   // If we want to append an error message to the worksheet and there is no cell
   // that can contain it we need to create such a cell.
@@ -538,6 +539,17 @@ TextCell *wxMaxima::DoRawConsoleAppend(wxString s, int type)
 
   else
   {
+
+    TextCell incompleteTextCell =
+      dynamic_cast<TextCell *>(m_console->m_cellPointers.m_currentTextCell);
+
+    if(incompleteTextCell != NULL)
+    {
+      wxString newVal = incompleteTextCell->GetValue(); 
+      // TODO
+      
+    }
+
     wxStringTokenizer tokens(s, wxT("\n"));
     int count = 0;
     MathCell *tmp = NULL, *lst = NULL;
