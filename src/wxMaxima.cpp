@@ -1249,7 +1249,9 @@ void wxMaxima::ReadFirstPrompt(wxString &data)
   int end;
   if((end = m_currentOutput.Find(m_firstPrompt)) == wxNOT_FOUND)
     return;
-  
+
+  m_console->m_cellPointers.m_currentTextCell = NULL;
+
 #if defined(__WXMSW__)
   int start = 0;
   start = data.Find(wxT("Maxima "));
@@ -1337,8 +1339,12 @@ void wxMaxima::ReadMiscText(wxString &data)
   // Extract all text that isn't a xml tag known to us.
   int miscTextLen = GetMiscTextEnd(data);
   if(miscTextLen <= 0)
+  {
+    if(data != wxEmptyString) 
+      m_console->m_cellPointers.m_currentTextCell = NULL;
     return;
-
+  }
+  
   wxString miscText = data.Left(miscTextLen);
   data = data.Right(data.Length() - miscTextLen);
 
@@ -1446,6 +1452,8 @@ void wxMaxima::ReadStatusBar(wxString &data)
   wxString statusbarStart = wxT("<statusbar>");
   if (!data.StartsWith(statusbarStart))
     return;
+  
+  m_console->m_cellPointers.m_currentTextCell = NULL;
 
   wxString sts = wxT("</statusbar>");
   int end;
@@ -1465,6 +1473,8 @@ void wxMaxima::ReadMath(wxString &data)
   wxString mthstart = wxT("<mth>");
   if (!data.StartsWith(mthstart))
     return;
+
+  m_console->m_cellPointers.m_currentTextCell = NULL;
 
   // Append everything from the "beginning of math" to the "end of math" marker
   // to the console and remove it from the data we got.
@@ -1496,6 +1506,8 @@ void wxMaxima::ReadLoadSymbols(wxString &data)
   if (!data.StartsWith(m_symbolsPrefix))
     return;
 
+  m_console->m_cellPointers.m_currentTextCell = NULL;
+
   int end = FindTagEnd(data, m_symbolsSuffix);
   
   if (end != wxNOT_FOUND)
@@ -1520,6 +1532,8 @@ void wxMaxima::ReadPrompt(wxString &data)
 {
   if (!data.StartsWith(m_promptPrefix))
     return;
+
+  m_console->m_cellPointers.m_currentTextCell = NULL;
 
   // If we got a prompt our connection to maxima was successful.
   m_unsuccessfullConnectionAttempts = 0;
