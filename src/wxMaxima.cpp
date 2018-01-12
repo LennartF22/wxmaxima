@@ -540,7 +540,7 @@ TextCell *wxMaxima::DoRawConsoleAppend(wxString s, int type)
   else
   {
 
-    TextCell incompleteTextCell =
+    TextCell *incompleteTextCell =
       dynamic_cast<TextCell *>(m_console->m_cellPointers.m_currentTextCell);
 
     if(incompleteTextCell != NULL)
@@ -558,7 +558,12 @@ TextCell *wxMaxima::DoRawConsoleAppend(wxString s, int type)
         s = wxEmptyString;
       }   
 
-      incompleteTextCell.SetValue(newVal);
+      incompleteTextCell->SetValue(newVal);
+      if(s == wxEmptyString)
+      {
+        m_console->RecalculateForce();
+        return incompleteTextCell;
+      }
     }
 
     wxStringTokenizer tokens(s, wxT("\n"));
@@ -566,10 +571,10 @@ TextCell *wxMaxima::DoRawConsoleAppend(wxString s, int type)
     MathCell *tmp = NULL, *lst = NULL;
     while (tokens.HasMoreTokens())
     {
-      TextCell *cell = new TextCell(m_console->GetTree(), &(m_console->m_configuration),
-                                    &m_console->m_cellPointers,
-                                    tokens.GetNextToken());
-
+      cell = new TextCell(m_console->GetTree(), &(m_console->m_configuration),
+                           &m_console->m_cellPointers,
+                           tokens.GetNextToken());
+      
       cell->SetType(type);
 
       if (tokens.HasMoreTokens())
@@ -839,13 +844,7 @@ void wxMaxima::ClientEvent(wxSocketEvent &event)
         // codepage. 
         wxLogStderr logStderr;
         wxString packet = wxString::FromUTF8((char *)m_packetFromMaxima, charsRead);
-        std::cerr<<"packet="<<packet<<"\n";
         newChars += packet;
-
-        // Maxima sometimes seems to end a packet in the middle of a text line.
-        // Let's output the lines that are affected.
-        if((m_packetFromMaxima[charsRead-1] != '\n') && (!newChars.Contains(">")) &&(!m_first))
-          std::cerr<<"PartialTextLine=\""<<newChars<<"\"\n";
 
         if (IsPaneDisplayed(menu_pane_xmlInspector))
           m_xmlInspector->Add_FromMaxima(newChars);
@@ -1427,6 +1426,7 @@ void wxMaxima::ReadMiscText(wxString &data)
   }
   if(miscText.EndsWith("\n"))
     m_console->m_cellPointers.m_currentTextCell = NULL;
+
   if(data != wxEmptyString) 
     m_console->m_cellPointers.m_currentTextCell = NULL;
 }
