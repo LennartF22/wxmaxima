@@ -561,7 +561,8 @@ TextCell *wxMaxima::DoRawConsoleAppend(wxString s, int type)
       incompleteTextCell->SetValue(newVal);
       if(s == wxEmptyString)
       {
-        m_console->RecalculateForce();
+        dynamic_cast<GroupCell *>(incompleteTextCell->GetGroup())->ResetSize();
+        dynamic_cast<GroupCell *>(incompleteTextCell->GetGroup())->Recalculate();
         return incompleteTextCell;
       }
     }
@@ -1402,7 +1403,6 @@ void wxMaxima::ReadMiscText(wxString &data)
   {
     // extract a string from the Data lines
     wxString textline = lines.GetNextToken();
-
     wxString trimmedLine = textline;
 
     trimmedLine.Trim(true);
@@ -1423,6 +1423,8 @@ void wxMaxima::ReadMiscText(wxString &data)
           m_console->m_cellPointers.m_currentTextCell = ConsoleAppend(textline, MC_TYPE_DEFAULT);
       }
     }
+    if(lines.HasMoreTokens())
+      m_console->m_cellPointers.m_currentTextCell = NULL;      
   }
   if(miscText.EndsWith("\n"))
     m_console->m_cellPointers.m_currentTextCell = NULL;
