@@ -545,9 +545,20 @@ TextCell *wxMaxima::DoRawConsoleAppend(wxString s, int type)
 
     if(incompleteTextCell != NULL)
     {
-      wxString newVal = incompleteTextCell->GetValue(); 
-      // TODO
-      
+      int pos = s.Find("\n");      
+      wxString newVal = incompleteTextCell->GetValue();
+      if(pos != wxNOT_FOUND)
+      {
+        newVal += s.Left(pos);
+        s = s.Right(s.Length() - pos - 1);
+      }
+      else
+      {
+        newVal += s;
+        s = wxEmptyString;
+      }   
+
+      incompleteTextCell.SetValue(newVal);
     }
 
     wxStringTokenizer tokens(s, wxT("\n"));
