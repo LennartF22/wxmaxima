@@ -589,8 +589,13 @@ void EditorCell::Draw(wxPoint point1, int fontsize)
     m_selectionChanged = false;
     wxDC *dc = configuration->GetDC();
     wxPoint point(point1);
-    if (m_width == -1 || m_height == -1 || configuration->ForceUpdate())
+    if (configuration->GetPrinter()) {
+      StyleText(point1.x * 2);
       RecalculateWidths(fontsize);
+    } else if (m_width == -1 || m_height == -1 || configuration->ForceUpdate()) {
+      StyleText();
+      RecalculateWidths(fontsize);
+    }
     
 //    dc->SetLogicalFunction(wxCOPY); // opaque (for everything except the caret)
 
@@ -3658,7 +3663,7 @@ void EditorCell::HandleSoftLineBreaks_Code(StyledText *&lastSpace, int &lineWidt
   }
 }
 
-void EditorCell::StyleTextCode()
+void EditorCell::StyleTextCode(int margin)
 {
   Configuration *configuration = (*m_configuration);
 
@@ -3932,15 +3937,13 @@ void EditorCell::StyleTextCode()
   m_wordList.Sort();
 }
 
-void EditorCell::StyleTextTexts()
+void EditorCell::StyleTextTexts(int margin)
 {
   Configuration *configuration = (*m_configuration);
   
   // Normally the cell begins at the x position m_currentPoint.x - but sometimes
   // m_currentPoint is 0 so we need to determine our own value for the x position.
-  int xmargin =
-  (configuration->GetLabelWidth() + 1) * configuration->GetDefaultFontSize() * configuration->GetZoomFactor() +
-  configuration->GetCellBracketWidth() + 2 * MC_CELL_SKIP;
+  int xmargin = margin;
   
   // Remove all bullets of item lists as we will introduce them again in the next
   // step, as well.
@@ -4211,6 +4214,14 @@ void EditorCell::StyleTextTexts()
 
 void EditorCell::StyleText()
 {
+  Configuration *configuration = *m_configuration;
+  // Default margin
+  StyleText((configuration->GetLabelWidth() + 1) * configuration->GetDefaultFontSize() * configuration->GetZoomFactor() +
+  configuration->GetCellBracketWidth() + 2 * MC_CELL_SKIP);
+}
+
+void EditorCell::StyleText(int margin)
+{
   // We will need to determine the width of text and therefore need to set
   // the font type and size.
   Configuration *configuration = (*m_configuration);
@@ -4232,9 +4243,9 @@ void EditorCell::StyleText()
   m_text.Replace(wxT("\r"), wxT(" "));
   // Do we need to style code or text?
   if (m_type == MC_TYPE_INPUT)
-    StyleTextCode();
+    StyleTextCode(margin);
   else
-    StyleTextTexts();
+    StyleTextTexts(margin);
 }
 
 
