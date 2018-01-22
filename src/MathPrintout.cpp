@@ -1,4 +1,4 @@
-﻿// -*- mode: c++; c-file-style: "linux"; c-basic-offset: 2; indent-tabs-mode: nil -*-
+// -*- mode: c++; c-file-style: "linux"; c-basic-offset: 2; indent-tabs-mode: nil -*-
 //
 //  Copyright (C) 2004-2015 Andrej Vodopivec <andrej.vodopivec@gmail.com>
 //            (C) 2016-2017 Gunter Königsmann <wxMaxima@physikbuch.de>
@@ -191,10 +191,6 @@ void MathPrintout::SetupData()
   (*m_configuration)->ShowCodeCells(m_oldconfig->ShowCodeCells());
   (*m_configuration)->ShowBrackets((*m_configuration)->PrintBrackets());
   (*m_configuration)->LineWidth_em(400);
-  int pageWidth, pageHeight;
-  int marginX, marginY;
-  GetPageSizePixels(&pageWidth, &pageHeight);
-  GetPageMargins(&marginX, &marginY);
 
   
 //  SetUserScale(1/DCSCALE,
@@ -212,6 +208,7 @@ void MathPrintout::SetupData()
   screenPPI = m_oldconfig->GetDC()->GetPPI();
   wxSize printPPI;
   printPPI = (*m_configuration)->GetDC()->GetPPI();
+
   double userScale_x, userScale_y;
   m_oldconfig->GetDC()->GetUserScale(&userScale_x, &userScale_y);
   double oldZoomFactor = m_oldconfig->GetZoomFactor();
@@ -226,15 +223,21 @@ void MathPrintout::SetupData()
     printPPI.x / DPI_REFERENCE * m_oldconfig->PrintScale()
   );
   #endif
-  
+
   wxMessageDialog dialog(NULL,
-                         wxString::Format(wxT("screenPPI.x=%i,\nprintPPI.x=%i\nzoomFactor=%f\nUserScale.x=%f"),
-                                          screenPPI.x,printPPI.x, oldZoomFactor, userScale_x),
-                         wxString("Printer Parameters"));
+    wxString::Format(wxT("screenPPI.x=%i,\nprintPPI.x=%i\nzoomFactor=%f\nUserScale.x=%f"),
+      screenPPI.x, printPPI.x, oldZoomFactor, userScale_x),
+    wxString("Printer Parameters"));
   dialog.ShowModal();
 
+  int pageWidth, pageHeight;
+  int marginX, marginY;
+  GetPageSizePixels(&pageWidth, &pageHeight);
+  GetPageMargins(&marginX, &marginY);
+
   (*m_configuration)->SetClientWidth(pageWidth - 2 * marginX
-                               - (*m_configuration)->Scale_Px((*m_configuration)->GetBaseIndent()));
+    - (*m_configuration)->Scale_Px(72) // Some additional margin to compensate for title and section indent
+    - (*m_configuration)->Scale_Px((*m_configuration)->GetBaseIndent()));
   (*m_configuration)->SetClientHeight(pageHeight - 2 * marginY);
 
   (*m_configuration)->SetIndent(marginX);
