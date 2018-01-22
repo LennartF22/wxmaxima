@@ -33,9 +33,6 @@
 
 #include <wx/config.h>
 
-#define PRINT_MARGIN_HORIZONTAL 5
-#define PRINT_MARGIN_VERTICAL 5
-
 MathPrintout::MathPrintout(wxString title, Configuration **configuration) : wxPrintout(title)
 {
   m_configuration = configuration;
@@ -267,8 +264,8 @@ void MathPrintout::OnPreparePrinting()
 
 void MathPrintout::GetPageMargins(int *horizontal, int *vertical)
 {
-  *horizontal = (int) ((*m_configuration)->Scale_Px(PRINT_MARGIN_HORIZONTAL) * 10);
-  *vertical = (int) ((*m_configuration)->Scale_Px(PRINT_MARGIN_VERTICAL) * 10);
+  *horizontal = (int) ((*m_configuration)->Scale_Px(PRINT_MARGIN_HORIZONTAL));
+  *vertical = (int) ((*m_configuration)->Scale_Px(PRINT_MARGIN_VERTICAL));
 }
 
 int MathPrintout::GetHeaderHeight()
